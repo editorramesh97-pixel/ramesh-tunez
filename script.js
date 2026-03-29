@@ -1,3 +1,9 @@
+// 🔐 CURRENT USER TRACK
+let currentUser = null;
+
+// 🔐 ADMIN EMAIL (👉 apna email daalo)
+const ADMIN_EMAIL = "editorramesh97@email.com";
+
 // 🔐 LOGIN SYSTEM
 function openLogin() {
   document.getElementById("loginPopup").style.display = "flex";
@@ -12,34 +18,32 @@ function login() {
   let pass = document.getElementById("pass").value;
 
   firebase.auth().signInWithEmailAndPassword(email, pass)
-    .then(() => {
+    .then((userCredential) => {
+      currentUser = userCredential.user;
       alert("Login Successful ✅");
-      checkAdmin();
+      closeLogin();
+      loadMusic();
     })
     .catch(err => alert(err.message));
 }
 
-// 🔥 ADMIN CHECK
-let isAdmin = false;
+function signup() {
+  let email = document.getElementById("email").value;
+  let pass = document.getElementById("pass").value;
 
-function checkAdmin() {
-  firebase.auth().onAuthStateChanged(user => {
-    if (user) {
-      // 👉 Apna email yaha daalo (IMPORTANT)
-      if (user.email === "editerramesh97@gmail.com") {
-        isAdmin = true;
-        console.log("Admin Login ✅");
-      } else {
-        isAdmin = false;
-      }
-    }
-    loadMusic();
-  });
+  firebase.auth().createUserWithEmailAndPassword(email, pass)
+    .then(() => alert("Account Created ✅"))
+    .catch(err => alert(err.message));
+}
+
+// 🔐 CHECK ADMIN
+function isAdmin() {
+  return currentUser && currentUser.email === ADMIN_EMAIL;
 }
 
 // 🎵 DASHBOARD
 function openDashboard() {
-  if (!isAdmin) {
+  if (!isAdmin()) {
     alert("Access Denied ❌");
     return;
   }
@@ -50,11 +54,20 @@ function closeDashboard() {
   document.getElementById("dashboardSection").style.display = "none";
 }
 
-// 🔥 UPLOAD MUSIC (SECURE)
-async function uploadMusic() {
+// 🎵 MUSIC POPUP
+function openMusic() {
+  document.getElementById("musicPopup").style.display = "block";
+  loadMusic();
+}
 
-  if (!isAdmin) {
-    alert("Only Admin Allowed ❌");
+function closeMusic() {
+  document.getElementById("musicPopup").style.display = "none";
+}
+
+// 🔥 UPLOAD MUSIC (ADMIN ONLY)
+async function uploadMusic() {
+  if (!isAdmin()) {
+    alert("Access Denied ❌");
     return;
   }
 
@@ -76,10 +89,14 @@ async function uploadMusic() {
 
     alert("Upload ho gaya 🎵🔥");
 
+    document.getElementById("title").value = "";
+    document.getElementById("songUrl").value = "";
+
     loadMusic();
 
   } catch (e) {
-    alert("Error ❌");
+    console.error(e);
+    alert("Error hua ❌");
   }
 }
 
@@ -90,51 +107,77 @@ async function loadMusic() {
   const track = document.getElementById("trackList");
   const full = document.getElementById("fullList");
 
+  if (!dummy || !track || !full) return;
+
   dummy.innerHTML = "";
   track.innerHTML = "";
   full.innerHTML = "";
 
-  const snapshot = await db.collection("SONG").get();
+  try {
+    const snapshot = await db.collection("SONG").get();
 
-  snapshot.forEach(doc => {
-    const data = doc.data();
-    const id = doc.id;
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const id = doc.id;
 
-    const audioId = "audio_" + id;
+      const div = document.createElement("div");
+      div.className = "beat-card";
 
-    const div = document.createElement("div");
-    div.className = "beat-card";
+      const audioId = "audio_" + id;
 
-    div.innerHTML = `
-      <h4>${data.title}</h4>
+      div.innerHTML = `
+        <h4>${data.title}</h4>
 
-      <audio id="${audioId}">
-        <source src="${data.url}" type="audio/mpeg">
-      </audio>
+        <audio id="${audioId}">
+          <source src="${data.url}" type="audio/mpeg">
+        </audio>
 
-      <button onclick="togglePlay('${audioId}')">▶️</button>
+        <div class="player-controls">
+          <button onclick="backward('${audioId}')">⏪</button>
+          <button onclick="togglePlay('${audioId}')">▶️</button>
+          <button onclick="forward('${audioId}')">⏩</button>
+        </div>
 
-      ${
-        isAdmin
-          ? `<button onclick="deleteSong('${id}')">🗑 Delete</button>`
-          : ""
+        <input type="range" min="0" max="1" step="0.1" value="1"
+          onchange="changeVolume('${audioId}', this.value)">
+
+        <a href="${data.url}" download>
+          <button class="download">⬇ Download</button>
+        </a>
+
+        <div class="btn-group">
+          ${data.category === "track" ? `
+            <a href="https://wa.me/916207861198?text=Hello%20I%20want%20to%20buy%20${data.title}">
+              <button class="buy">💰 Buy</button>
+            </a>
+          ` : ""}
+
+          ${isAdmin() ? `
+            <button class="delete" onclick="deleteSong('${id}')">🗑 Delete</button>
+          ` : ""}
+        </div>
+
+        <hr>
+      `;
+
+      if (data.category === "dummy") {
+        dummy.appendChild(div);
+      } else if (data.category === "track") {
+        track.appendChild(div);
+      } else {
+        full.appendChild(div);
       }
-    `;
+    });
 
-    if (data.category === "dummy") {
-      dummy.appendChild(div);
-    } else if (data.category === "track") {
-      track.appendChild(div);
-    } else {
-      full.appendChild(div);
-    }
-  });
+  } catch (error) {
+    console.error(error);
+    alert("Load error ❌");
+  }
 }
 
-// 🗑 DELETE SONG (SECURE)
+// 🗑 DELETE SONG (ADMIN ONLY)
 async function deleteSong(id) {
-
-  if (!isAdmin) {
+  if (!isAdmin()) {
     alert("Access Denied ❌");
     return;
   }
@@ -142,12 +185,17 @@ async function deleteSong(id) {
   const confirmDelete = confirm("Delete karna hai?");
   if (!confirmDelete) return;
 
-  await db.collection("SONG").doc(id).delete();
-  alert("Deleted ✅");
-  loadMusic();
+  try {
+    await db.collection("SONG").doc(id).delete();
+    alert("Deleted ✅");
+    loadMusic();
+  } catch (e) {
+    console.error(e);
+    alert("Delete error ❌");
+  }
 }
 
-// 🎧 PLAYER
+// 🎧 PLAYER SYSTEM
 let currentAudio = null;
 
 function togglePlay(audioId) {
@@ -165,7 +213,20 @@ function togglePlay(audioId) {
   }
 }
 
-// AUTO LOAD
-window.onload = () => {
-  checkAdmin();
-};
+function changeVolume(audioId, value) {
+  document.getElementById(audioId).volume = value;
+}
+
+function forward(audioId) {
+  document.getElementById(audioId).currentTime += 10;
+}
+
+function backward(audioId) {
+  document.getElementById(audioId).currentTime -= 10;
+}
+
+// 🔥 AUTO AUTH CHECK
+firebase.auth().onAuthStateChanged(user => {
+  currentUser = user;
+  loadMusic();
+});
