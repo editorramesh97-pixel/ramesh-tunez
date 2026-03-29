@@ -2,8 +2,8 @@
 let currentUser = null;
 
 // 🔐 ADMIN EMAIL (👉 apna email daalo)
-const ADMIN_EMAIL = "editorramesh97@email.com";
-
+ const ADMIN_EMAIL = "editorramesh97@gmail.com";
+ 
 // 🔐 LOGIN SYSTEM
 function openLogin() {
   document.getElementById("loginPopup").style.display = "flex";
