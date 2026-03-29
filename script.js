@@ -12,21 +12,37 @@ function login() {
   let pass = document.getElementById("pass").value;
 
   firebase.auth().signInWithEmailAndPassword(email, pass)
-    .then(() => alert("Login Successful ✅"))
+    .then(() => {
+      alert("Login Successful ✅");
+      checkAdmin();
+    })
     .catch(err => alert(err.message));
 }
 
-function signup() {
-  let email = document.getElementById("email").value;
-  let pass = document.getElementById("pass").value;
+// 🔥 ADMIN CHECK
+let isAdmin = false;
 
-  firebase.auth().createUserWithEmailAndPassword(email, pass)
-    .then(() => alert("Account Created ✅"))
-    .catch(err => alert(err.message));
+function checkAdmin() {
+  firebase.auth().onAuthStateChanged(user => {
+    if (user) {
+      // 👉 Apna email yaha daalo (IMPORTANT)
+      if (user.email === "editerramesh97@gmail.com") {
+        isAdmin = true;
+        console.log("Admin Login ✅");
+      } else {
+        isAdmin = false;
+      }
+    }
+    loadMusic();
+  });
 }
 
 // 🎵 DASHBOARD
 function openDashboard() {
+  if (!isAdmin) {
+    alert("Access Denied ❌");
+    return;
+  }
   document.getElementById("dashboardSection").style.display = "block";
 }
 
@@ -34,18 +50,14 @@ function closeDashboard() {
   document.getElementById("dashboardSection").style.display = "none";
 }
 
-// 🎵 MUSIC POPUP
-function openMusic() {
-  document.getElementById("musicPopup").style.display = "block";
-  loadMusic();
-}
-
-function closeMusic() {
-  document.getElementById("musicPopup").style.display = "none";
-}
-
-// 🔥 UPLOAD MUSIC
+// 🔥 UPLOAD MUSIC (SECURE)
 async function uploadMusic() {
+
+  if (!isAdmin) {
+    alert("Only Admin Allowed ❌");
+    return;
+  }
+
   const title = document.getElementById("title").value;
   const url = document.getElementById("songUrl").value;
   const category = document.getElementById("category").value;
@@ -64,111 +76,78 @@ async function uploadMusic() {
 
     alert("Upload ho gaya 🎵🔥");
 
-    document.getElementById("title").value = "";
-    document.getElementById("songUrl").value = "";
-
     loadMusic();
 
   } catch (e) {
-    console.error(e);
-    alert("Error hua ❌");
+    alert("Error ❌");
   }
 }
 
-// 🎵 LOAD MUSIC (🔥 FIXED)
+// 🎵 LOAD MUSIC
 async function loadMusic() {
 
   const dummy = document.getElementById("dummyList");
   const track = document.getElementById("trackList");
   const full = document.getElementById("fullList");
 
-  if (!dummy || !track || !full) {
-    console.log("Container missing ❌");
-    return;
-  }
-
   dummy.innerHTML = "";
   track.innerHTML = "";
   full.innerHTML = "";
 
-  try {
-    const snapshot = await db.collection("SONG").get();
+  const snapshot = await db.collection("SONG").get();
 
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      const id = doc.id;
-      const fixedUrl = data.url; // ✅ FIX
+  snapshot.forEach(doc => {
+    const data = doc.data();
+    const id = doc.id;
 
-      const div = document.createElement("div");
-      div.className = "beat-card";
-      div.id = id;
+    const audioId = "audio_" + id;
 
-      const audioId = "audio_" + id;
+    const div = document.createElement("div");
+    div.className = "beat-card";
 
-      div.innerHTML = `
-        <h4>${data.title}</h4>
+    div.innerHTML = `
+      <h4>${data.title}</h4>
 
-        <audio id="${audioId}">
-          <source src="${fixedUrl}" type="audio/mpeg">
-        </audio>
+      <audio id="${audioId}">
+        <source src="${data.url}" type="audio/mpeg">
+      </audio>
 
-        <div class="player-controls">
-          <button onclick="backward('${audioId}')">⏪</button>
-          <button onclick="togglePlay('${audioId}')">▶️</button>
-          <button onclick="forward('${audioId}')">⏩</button>
-        </div>
+      <button onclick="togglePlay('${audioId}')">▶️</button>
 
-        <input type="range" min="0" max="1" step="0.1" value="1"
-          onchange="changeVolume('${audioId}', this.value)">
-
-        <a href="${fixedUrl}" download>
-          <button class="download">⬇ Download</button>
-        </a>
-
-        <div class="btn-group">
-          ${data.category === "track" ? `
-            <a href="https://wa.me/916207861198?text=Hello%20I%20want%20to%20buy%20${data.title}">
-              <button class="buy">💰 Buy</button>
-            </a>
-          ` : ""}
-
-          <button class="delete" onclick="deleteSong('${id}')">🗑 Delete</button>
-        </div>
-
-        <hr>
-      `;
-
-      if (data.category === "dummy") {
-        dummy.appendChild(div);
-      } else if (data.category === "track") {
-        track.appendChild(div);
-      } else {
-        full.appendChild(div);
+      ${
+        isAdmin
+          ? `<button onclick="deleteSong('${id}')">🗑 Delete</button>`
+          : ""
       }
-    });
+    `;
 
-  } catch (error) {
-    console.error("Error:", error);
-    alert("Load error ❌");
-  }
+    if (data.category === "dummy") {
+      dummy.appendChild(div);
+    } else if (data.category === "track") {
+      track.appendChild(div);
+    } else {
+      full.appendChild(div);
+    }
+  });
 }
 
-// 🗑 DELETE SONG
+// 🗑 DELETE SONG (SECURE)
 async function deleteSong(id) {
+
+  if (!isAdmin) {
+    alert("Access Denied ❌");
+    return;
+  }
+
   const confirmDelete = confirm("Delete karna hai?");
   if (!confirmDelete) return;
 
-  try {
-    await db.collection("SONG").doc(id).delete();
-    alert("Deleted ✅");
-    loadMusic();
-  } catch (e) {
-    console.error(e);
-    alert("Delete error ❌");
-  }
+  await db.collection("SONG").doc(id).delete();
+  alert("Deleted ✅");
+  loadMusic();
 }
 
-// 🎧 PLAYER SYSTEM
+// 🎧 PLAYER
 let currentAudio = null;
 
 function togglePlay(audioId) {
@@ -186,17 +165,7 @@ function togglePlay(audioId) {
   }
 }
 
-function changeVolume(audioId, value) {
-  document.getElementById(audioId).volume = value;
-}
-
-function forward(audioId) {
-  document.getElementById(audioId).currentTime += 10;
-}
-
-function backward(audioId) {
-  document.getElementById(audioId).currentTime -= 10;
-}
-
 // AUTO LOAD
-window.onload = loadMusic;
+window.onload = () => {
+  checkAdmin();
+};
