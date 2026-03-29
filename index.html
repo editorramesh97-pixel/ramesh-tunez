@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ramesh Tunez 🎧</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="style.css">
+
+  <!-- FIREBASE -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDotMPmAHciXCSkbRybFeD5LHglpCtCc7c",
+      authDomain: "otp-login-app-ba01d.firebaseapp.com",
+      projectId: "otp-login-app-ba01d",
+      storageBucket: "otp-login-app-ba01d.appspot.com",
+      messagingSenderId: "811646154165",
+      appId: "1:811646154165:web:f68b178ad29172bfbfd5fc"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+  </script>
+</head>
+
+<body>
+
+<header>🔥 Ramesh Tunez</header>
+
+<nav>
+  <a href="#" onclick="openDashboard()">Dashboard</a>
+  <a href="#home">Home</a>
+  <a href="#about">About</a>
+  <a href="javascript:void(0)" onclick="openMusic()">Music</a>
+  <a href="https://www.youtube.com/@Ramesh_Tunez_Official" target="_blank">YouTube</a>
+  <a href="javascript:void(0)" onclick="openLogin()">Login</a>
+</nav>
+
+<!-- DASHBOARD -->
+<div id="dashboardSection" style="
+  display:none;
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:#111;
+  z-index:9999;
+  overflow:auto;
+">
+
+<button onclick="closeDashboard()" style="
+  position:absolute;
+  top:20px;
+  right:20px;
+  padding:8px 15px;
+  background:red;
+  color:white;
+  border:none;
+  border-radius:5px;
+  cursor:pointer;
+">
+❌ Close
+</button>
+
+<h2>Dashboard 🎵</h2>
+
+<input type="text" id="title" placeholder="Song Title">
+
+<input type="text" id="songUrl" placeholder="Paste Catbox MP3 Link">
+
+<select id="category">
+  <option value="dummy">Dummy</option>
+  <option value="track">Track</option>
+  <option value="full">Full Song</option>
+</select>
+
+<button onclick="uploadMusic()">Upload</button>
+
+</div>
+
+<!-- LOGIN -->
+<div id="loginPopup" class="login-popup">
+  <div class="login-box">
+
+    <span class="close" onclick="closeLogin()">❌</span>
+
+    <h2>Login</h2>
+
+    <input type="email" id="email" placeholder="Enter Email"><br><br>
+    <input type="password" id="pass" placeholder="Enter Password"><br><br>
+
+    <button onclick="signup()">Sign Up</button>
+    <button onclick="login()">Login</button>
+
+  </div>
+</div>
+
+<!-- 🎵 MUSIC POPUP -->
+<div id="musicPopup" class="popup">
+
+  <div class="popup-content">
+
+    <!-- ❌ Close Button -->
+    <span class="close-btn" onclick="closeMusic()">×</span>
+
+    <!-- 🎵 Music Section -->
+    <section class="music-library">
+
+      <h2>🎵 Music Library</h2>
+
+      <div class="library-container">
+
+  <div class="library-card">
+    <h3>🎧 Dummy</h3>
+    <div id="dummyList"></div>
+  </div>
+
+  <div class="library-card main-player">
+    <h3>📀 Track</h3>
+    <div id="trackList"></div>
+  </div>
+
+  <div class="library-card">
+    <h3>🔥 Full Song</h3>
+    <div id="fullList"></div>
+  </div>
+
+</div>
+
+    </section>
+
+  </div>
+
+</div>
+
+<!-- HOME -->
+<section id="home">
+  <h1>Welcome to <span>Ramesh Tunez</span> 🚀</h1>
+  <p>Music Producer | Beat Maker | YouTuber</p>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="card">
+    <h2>About Me</h2>
+    <p>Hi, I'm Ramesh Tunez 🎧 — a Music Producer & Beat Maker. 🎵
+
+I create high-quality beats and unique music for artists and creators.
+
+Let’s create something amazing together. 🚀🤙 Contact us :- 
+✆ Call or WhatsApp : +91 6207861198
+✉ Email : rks56569090@gmail.com
+ Trade Enquiry :- +91 9525374110
+</p>
+  </div>
+</section>
+
+<!-- 🎧 LATEST MUSIC -->
+<section id="latestMusic">
+  <h2 style="text-align:center;">🎧 Latest Music</h2>
+
+  <div class="music-wrapper">
+
+    <div class="music-box">
+      <h3>🎧 1st Beat</h3>
+
+      <audio controls preload="auto">
+        <source src="https://files.catbox.moe/1pfjix.mp3" type="audio/mpeg">
+      </audio>
+
+      <br>
+      <a class="download-btn" href="https://files.catbox.moe/1pfjix.mp3" target="_blank">⬇ Download</a>
+      <button class="buy-btn">💰 Buy</button>
+    </div>
+
+    <div class="music-box">
+      <h3>🎧 2nd Beat</h3>
+
+      <audio controls preload="auto">
+        <source src="https://files.catbox.moe/1pfjix.mp3" type="audio/mpeg">
+      </audio>
+
+      <br>
+      <a class="download-btn" href="https://files.catbox.moe/1pfjix.mp3" target="_blank">⬇ Download</a>
+      <button class="buy-btn">💰 Buy</button>
+    </div>
+
+    <div class="music-box">
+      <h3>🎧 3rd Beat</h3>
+
+      <audio controls preload="auto">
+        <source src="https://files.catbox.moe/1pfjix.mp3" type="audio/mpeg">
+      </audio>
+
+      <br>
+      <a class="download-btn" href="https://files.catbox.moe/1pfjix.mp3" target="_blank">⬇ Download</a>
+      <button class="buy-btn">💰 Buy</button>
+    </div>
+
+  </div>
+</section>
+
+<!-- YOUTUBE -->
+<section id="youtube">
+  <h2>📺 YouTube Videos</h2>
+
+  <div class="video-container">
+    <iframe src="https://www.youtube.com/embed/gKbXnP84KjE" allowfullscreen></iframe>
+  </div>
+</section>
+
+<footer>
+  © 2026 Ramesh Tunez
+</footer>
+
+<script src="script.js"></script>
+
+</body>
+</html>
