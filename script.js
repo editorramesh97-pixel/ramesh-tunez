@@ -114,38 +114,54 @@ async function loadMusic() {
   track.innerHTML = "";
   full.innerHTML = "";
 
-  // 🔥 AUTO COUNTERS
-  let dCount = 1;
-  let tCount = 1;
-  let fCount = 1;
-
   try {
     const snapshot = await db.collection("SONG").get();
 
+    let songs = [];
+
+    // 🔥 STEP 1: ALL DATA COLLECT
     snapshot.forEach(doc => {
-      const data = doc.data();
-      const id = doc.id;
+      songs.push({
+        id: doc.id,
+        ...doc.data()
+      });
+    });
 
-      const audioId = "audio_" + id;
+    // 🔥 STEP 2: SORT (important 🔥)
+    songs.sort((a, b) => 
+      a.title.trim().toLowerCase().localeCompare(
+        b.title.trim().toLowerCase()
+      )
+    );
 
-      // 🔢 AUTO NUMBER
-      let number = "";
-      if (data.category === "dummy") {
-        number = dCount++;
-      } else if (data.category === "track") {
-        number = tCount++;
-      } else {
-        number = fCount++;
+    // 🔥 STEP 3: TITLE MAP
+    let titleMap = {};
+    let count = 1;
+
+    songs.forEach(song => {
+      let cleanTitle = song.title.trim().toLowerCase().replace(/\s+/g, ' ');
+
+      if (!titleMap[cleanTitle]) {
+        titleMap[cleanTitle] = count++;
       }
+    });
+
+    // 🔥 STEP 4: RENDER
+    songs.forEach(song => {
+
+      const audioId = "audio_" + song.id;
+
+      let cleanTitle = song.title.trim().toLowerCase().replace(/\s+/g, ' ');
+      let number = titleMap[cleanTitle];
 
       const div = document.createElement("div");
       div.className = "beat-card";
 
       div.innerHTML = `
-        <h4>${number}. ${data.title}</h4>
+        <h4>${number}. ${song.title}</h4>
 
         <audio id="${audioId}">
-          <source src="${data.url}" type="audio/mpeg">
+          <source src="${song.url}" type="audio/mpeg">
         </audio>
 
         <div class="player-controls">
@@ -157,32 +173,35 @@ async function loadMusic() {
         <input type="range" min="0" max="1" step="0.1" value="1"
           onchange="changeVolume('${audioId}', this.value)">
 
-        <a href="${data.url}" download>
+        <a href="${song.url}" download>
           <button class="download">⬇ Download</button>
         </a>
 
         <div class="btn-group">
-          ${data.category === "track" ? `
-            <a href="https://wa.me/916207861198?text=Hello%20I%20want%20to%20buy%20${data.title}">
+          ${song.category === "track" ? `
+            <a href="https://wa.me/916207861198?text=Hello%20I%20want%20to%20buy%20${song.title}">
               <button class="buy">💰 Buy</button>
             </a>
           ` : ""}
 
           ${isAdmin() ? `
-            <button class="delete" onclick="deleteSong('${id}')">🗑 Delete</button>
+            <button class="delete" onclick="deleteSong('${song.id}')">🗑 Delete</button>
           ` : ""}
         </div>
 
         <hr>
       `;
 
-      if (data.category === "dummy") {
+      if (song.category === "dummy") {
         dummy.appendChild(div);
-      } else if (data.category === "track") {
+      } 
+      else if (song.category === "track") {
         track.appendChild(div);
-      } else {
+      } 
+      else {
         full.appendChild(div);
       }
+
     });
 
   } catch (error) {
