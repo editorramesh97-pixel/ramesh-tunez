@@ -1,9 +1,9 @@
 // 🔐 CURRENT USER TRACK
 let currentUser = null;
 
-// 🔐 ADMIN EMAIL (👉 apna email daalo)
- const ADMIN_EMAIL = "editorramesh97@gmail.com";
- 
+// 🔐 ADMIN EMAIL
+const ADMIN_EMAIL = "editorramesh97@gmail.com";
+
 // 🔐 LOGIN SYSTEM
 function openLogin() {
   document.getElementById("loginPopup").style.display = "flex";
@@ -22,7 +22,7 @@ function login() {
       currentUser = userCredential.user;
       alert("Login Successful ✅");
       closeLogin();
-      loadMusic();
+      // ❌ loadMusic हटाया (important fix)
     })
     .catch(err => alert(err.message));
 }
@@ -36,9 +36,10 @@ function signup() {
     .catch(err => alert(err.message));
 }
 
-// 🔐 CHECK ADMIN
+// 🔐 ADMIN CHECK (SAFE)
 function isAdmin() {
-  return currentUser && currentUser.email === ADMIN_EMAIL;
+  return currentUser &&
+    currentUser.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
 }
 
 // 🎵 DASHBOARD
@@ -64,7 +65,7 @@ function closeMusic() {
   document.getElementById("musicPopup").style.display = "none";
 }
 
-// 🔥 UPLOAD MUSIC (ADMIN ONLY)
+// 🔥 UPLOAD MUSIC
 async function uploadMusic() {
   if (!isAdmin()) {
     alert("Access Denied ❌");
@@ -100,7 +101,7 @@ async function uploadMusic() {
   }
 }
 
-// 🎵 LOAD MUSIC
+// 🎵 LOAD MUSIC (AUTO NUMBERING + ADMIN FIX)
 async function loadMusic() {
 
   const dummy = document.getElementById("dummyList");
@@ -113,6 +114,11 @@ async function loadMusic() {
   track.innerHTML = "";
   full.innerHTML = "";
 
+  // 🔥 AUTO COUNTERS
+  let dCount = 1;
+  let tCount = 1;
+  let fCount = 1;
+
   try {
     const snapshot = await db.collection("SONG").get();
 
@@ -120,13 +126,23 @@ async function loadMusic() {
       const data = doc.data();
       const id = doc.id;
 
+      const audioId = "audio_" + id;
+
+      // 🔢 AUTO NUMBER
+      let number = "";
+      if (data.category === "dummy") {
+        number = dCount++;
+      } else if (data.category === "track") {
+        number = tCount++;
+      } else {
+        number = fCount++;
+      }
+
       const div = document.createElement("div");
       div.className = "beat-card";
 
-      const audioId = "audio_" + id;
-
       div.innerHTML = `
-        <h4>${data.title}</h4>
+        <h4>${number}. ${data.title}</h4>
 
         <audio id="${audioId}">
           <source src="${data.url}" type="audio/mpeg">
@@ -175,7 +191,7 @@ async function loadMusic() {
   }
 }
 
-// 🗑 DELETE SONG (ADMIN ONLY)
+// 🗑 DELETE
 async function deleteSong(id) {
   if (!isAdmin()) {
     alert("Access Denied ❌");
@@ -195,7 +211,7 @@ async function deleteSong(id) {
   }
 }
 
-// 🎧 PLAYER SYSTEM
+// 🎧 PLAYER
 let currentAudio = null;
 
 function togglePlay(audioId) {
@@ -225,7 +241,7 @@ function backward(audioId) {
   document.getElementById(audioId).currentTime -= 10;
 }
 
-// 🔥 AUTO AUTH CHECK
+// 🔥 AUTO AUTH CHECK (MAIN FIX)
 firebase.auth().onAuthStateChanged(user => {
   currentUser = user;
   loadMusic();
